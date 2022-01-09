@@ -3,7 +3,6 @@ import type { NextPage } from 'next'
 import { format } from 'date-fns';
 import Container from '../components/Container'
 
-
 const Home: NextPage = (props: any) => {
   const messageEl = useRef<HTMLInputElement>(null);
   const nameEl = useRef<HTMLInputElement>(null);
