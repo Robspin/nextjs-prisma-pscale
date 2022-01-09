@@ -11,9 +11,10 @@ export default async function handler(
         count: true
       }
     });
-
+    
+    if (!totalViews._sum.count) return
     return res.status(200).json({ total: totalViews._sum.count.toString() });
-  } catch (e) {
+  } catch (e: any) {
     return res.status(500).json({ message: e.message });
   }
 }

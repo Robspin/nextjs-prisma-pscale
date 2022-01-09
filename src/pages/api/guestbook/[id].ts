@@ -16,7 +16,7 @@ export default async function handler(
     }
   });
 
-  if (req.method === 'GET') {
+  if (req.method === 'GET' && entry) {
     return res.json({
       id: entry.id.toString(),
       body: entry.body,

@@ -13,7 +13,7 @@ export default async function handler(
     });
 
     return res.json(
-      entries.map((entry) => ({
+      entries.map((entry: any) => ({
         id: entry.id.toString(),
         body: entry.body,
         created_by: entry.created_by,
