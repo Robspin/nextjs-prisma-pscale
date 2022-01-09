@@ -123,7 +123,7 @@ function GuestbookEntry({ entry }: any) {
 export default Home
 
 export async function getStaticProps() {
-  const url = 'http://localhost:3000'
+  const url = ''
 
   const guestbookEntriesRes = await fetch(`${url}/api/guestbook`)
   const guestbookEntriesData = await guestbookEntriesRes.json()
