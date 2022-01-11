@@ -2,17 +2,24 @@ import { useRef, useEffect } from 'react'
 import type { NextPage } from 'next'
 import { format } from 'date-fns';
 import Container from '../components/Container'
+import useSWR, { useSWRConfig } from 'swr';
+import fetcher from '../utils/fetcher';
+import prisma from '../utils/prisma';
 
 const Home: NextPage = (props: any) => {
-  const messageEl = useRef<HTMLInputElement>(null);
-  const nameEl = useRef<HTMLInputElement>(null);
+  const { fallbackData } = props
+  const { mutate } = useSWRConfig()
+  const messageEl = useRef<HTMLInputElement>(null)
+  const nameEl = useRef<HTMLInputElement>(null)
+  const { data: entries } = useSWR('/api/guestbook', fetcher, {
+    fallbackData
+  });
 
-  const { guestbookEntriesData, viewsData } = props
-
+  const { data: views }: any = useSWR('/api/views/home', fetcher, { fallbackData: 1})
   useEffect(() => { visited() }, [])
 
   const visited = async () => {
-    const res = await fetch('/api/views/home', {
+    await fetch('/api/views/home', {
       headers: {
         'Content-Type': 'application/json'
       },
@@ -35,14 +42,11 @@ const Home: NextPage = (props: any) => {
     });
 
     const { error } = await res.json();
-    console.error(error)
+    if (error) {
+      console.error(error)
+    }
 
-    guestbookEntriesData.push({ 
-      id: guestbookEntriesData.length + 1,
-      updatedAt: Date.now(),
-      body: messageEl.current.value,
-      createdBy: nameEl.current.value
-    })
+    mutate('/api/guestbook');
 
     messageEl.current.value = '';
     nameEl.current.value = '';
@@ -56,7 +60,7 @@ const Home: NextPage = (props: any) => {
           GreenTemple
         </h1>
         <h2 className="text-gray-700 dark:text-gray-200 mb-4">Unenumerated blog and coding website</h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 min-w-32 md:mt-0 absolute right-0 top-20">{viewsData.total}x visited</p>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 min-w-32 md:mt-0 absolute right-0 top-20">{views.total}x visited</p>
         <p className="text-gray-600 dark:text-gray-400 mb-16">
           This website is currently still being built. The stack I am using is a NextJS frontend with TailwindCSS, a mysql database in Planetscale along with Prisma ORM. Updates coming soon!
         </p>
@@ -84,19 +88,21 @@ const Home: NextPage = (props: any) => {
             >Sign</button>
           </form>
         </div>
-        {guestbookEntriesData.map((entry: any) => (<GuestbookEntry key={entry.id} entry={entry} />))}
+        {entries.map((entry: any) => (<GuestbookEntry key={entry.id} entry={entry} />))}
       </div>
     </Container>
   )
 }
 
 function GuestbookEntry({ entry }: any) {
+  const { mutate } = useSWRConfig()
   const deleteEntry = async (e: any) => {
     e.preventDefault();
 
     await fetch(`/api/guestbook/${entry.id}`, {
       method: 'DELETE'
     });
+    mutate('/api/guestbook');
   };
 
   return (
@@ -123,21 +129,23 @@ function GuestbookEntry({ entry }: any) {
 export default Home
 
 export async function getStaticProps() {
-  const url = ''
-
-  const guestbookEntriesRes = await fetch(`${url}/api/guestbook`)
-  const guestbookEntriesData = await guestbookEntriesRes.json()
-  const viewsRes = await fetch(`${url}/api/views/home`)
-  const viewsData = await viewsRes.json()
-
-
-  if (!guestbookEntriesData || !viewsData) {
-    return {
-      notFound: true,
+  const entries = await prisma.guestbook.findMany({
+    orderBy: {
+      updated_at: 'desc'
     }
-  }
+  });
+
+  const fallbackData = entries.map((entry) => ({
+    id: entry.id.toString(),
+    body: entry.body,
+    created_by: entry.created_by.toString(),
+    updated_at: entry.updated_at.toString()
+  }));
 
   return {
-    props: { guestbookEntriesData, viewsData },
-  }
+    props: {
+      fallbackData
+    },
+    revalidate: 60
+  };
 }
