@@ -22,13 +22,6 @@ export default async function handler(
     );
   }
 
-//   const session = await getSession({ req });
-//   const { email, name } = session.user;
-
-//   if (!session) {
-//     return res.status(403).send('Unauthorized');
-//   }
-
   if (req.method === 'POST') {
     const { message, name } = req.body.body
     const newEntry = await prisma.guestbook.create({

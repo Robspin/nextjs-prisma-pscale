@@ -6,16 +6,20 @@ import useSWR, { useSWRConfig } from 'swr';
 import fetcher from '../utils/fetcher';
 import prisma from '../utils/prisma';
 
+export type Views = {
+  total: number;
+};
+
 const Home: NextPage = (props: any) => {
   const { fallbackData } = props
   const { mutate } = useSWRConfig()
   const messageEl = useRef<HTMLInputElement>(null)
   const nameEl = useRef<HTMLInputElement>(null)
-  const { data: entries } = useSWR('/api/guestbook', fetcher, {
-    fallbackData
-  });
-
-  const { data: views }: any = useSWR('/api/views/home', fetcher, { fallbackData: 1})
+  const { data: entries } = useSWR('/api/guestbook', fetcher, { fallbackData });
+  
+  const { data: views }: any = useSWR<Views>(`/api/views/home`, fetcher)
+  const total = views?.total
+  
   useEffect(() => { visited() }, [])
 
   const visited = async () => {
@@ -60,7 +64,7 @@ const Home: NextPage = (props: any) => {
           GreenTemple
         </h1>
         <h2 className="text-gray-700 dark:text-gray-200 mb-4">Unenumerated blog and coding website</h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 min-w-32 md:mt-0 absolute right-0 top-20">{views.total}x visited</p>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 min-w-32 md:mt-0 absolute right-0 top-20">{total}x visited</p>
         <p className="text-gray-600 dark:text-gray-400 mb-16">
           This website is currently still being built. The stack I am using is a NextJS frontend with TailwindCSS, a mysql database in Planetscale along with Prisma ORM. Updates coming soon!
         </p>
@@ -123,7 +127,7 @@ function GuestbookEntry({ entry }: any) {
             </button>
       </div>
     </div>
-  );
+  )
 }
 
 export default Home
@@ -133,14 +137,15 @@ export async function getStaticProps() {
     orderBy: {
       updated_at: 'desc'
     }
-  });
+  })
 
   const fallbackData = entries.map((entry: any) => ({
     id: entry.id.toString(),
     body: entry.body,
     created_by: entry.created_by.toString(),
     updated_at: entry.updated_at.toString()
-  }));
+  }))
+
 
   return {
     props: {
